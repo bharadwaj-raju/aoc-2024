@@ -52,29 +52,6 @@ def causes_loop(
 guard = None
 facing = None
 
-obstacles = set()
-possible_y = set()
-possible_x = set()
-
-rows = len(grid)
-cols = len(grid[0])
-
-for y, row in enumerate(grid):
-    for x, cell in enumerate(row):
-        if cell in {"^", "<", ">", "v"}:
-            guard = vec2(x, y)
-            facing = cell
-        elif cell == "#":
-            if x + 1 < cols:
-                possible_x.add(x + 1)
-            if x - 1 >= 0:
-                possible_x.add(x - 1)
-            if y + 1 < rows:
-                possible_y.add(y + 1)
-            if y - 1 >= 0:
-                possible_y.add(y - 1)
-            obstacles.add(vec2(x, y))
-
 assert guard is not None
 assert facing is not None
 
