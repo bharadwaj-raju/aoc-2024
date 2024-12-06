@@ -65,7 +65,7 @@ normal_path = walk(grid, guard, facing)
 
 looping_obstacles = set()
 
-for would_step in normal_path[1:]:
+for would_step in set(normal_path[1:]):
     if causes_loop(grid, guard, facing, would_step):
         looping_obstacles.add(would_step)
 
