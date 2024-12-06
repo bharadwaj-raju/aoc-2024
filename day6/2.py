@@ -57,6 +57,8 @@ def causes_loop(
             guard = guard - sym2dir[facing]
             while grid_get(grid, guard + sym2dir[facing], default="O") == "#" or guard + sym2dir[facing] == obstacle:
                 facing = turn_right_90[facing]
+                if (guard, facing) in seen:
+                    return True
         if (guard, facing) in seen:
             return True
         seen.add((guard, facing))
@@ -85,7 +87,7 @@ normal_path = walk(grid, guard, facing)
 
 looping_obstacles = set()
 
-for would_step in normal_path[1:]:
+for would_step in set(normal_path[1:]):
     obstacles_by_col[would_step.x].append(would_step.y)
     obstacles_by_row[would_step.y].append(would_step.x)
     if causes_loop(grid, guard, facing, would_step, obstacles_by_row, obstacles_by_col):
