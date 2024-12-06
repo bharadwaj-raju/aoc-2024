@@ -7,9 +7,7 @@ rows = len(puzzle)
 cols = len(puzzle[0])
 
 
-def check_in_direction(
-    puzzle: list[str], pos: vec2, delta: vec2, needle: Iterable[str]
-) -> bool:
+def check_in_direction(puzzle: list[str], pos: vec2, delta: vec2, needle: Iterable[str]) -> bool:
     cumulative_delta = delta
     for rem in needle:
         if grid_get(puzzle, pos + cumulative_delta) == rem:

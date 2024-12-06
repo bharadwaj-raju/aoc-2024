@@ -41,9 +41,7 @@ class vec2:
 
     @staticmethod
     def all_directions() -> list["vec2"]:
-        return [
-            vec2(x, y) for x, y in product([+1, -1, 0], repeat=2) if (x, y) != (0, 0)
-        ]
+        return [vec2(x, y) for x, y in product([+1, -1, 0], repeat=2) if (x, y) != (0, 0)]
 
     @staticmethod
     def cardinal_directions() -> list["vec2"]:
