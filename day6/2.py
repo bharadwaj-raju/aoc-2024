@@ -52,6 +52,12 @@ def causes_loop(
 guard = None
 facing = None
 
+for y, row in enumerate(grid):
+    for x, cell in enumerate(row):
+        if cell in {"^", "<", ">", "v"}:
+            guard = vec2(x, y)
+            facing = cell
+
 assert guard is not None
 assert facing is not None
 
