@@ -1,3 +1,4 @@
+from collections import defaultdict
 from collections.abc import Sequence
 from util import grid_get, vec2, readgrid
 
