@@ -14,6 +14,10 @@ def readtext() -> str:
     return Path(sys.argv[1]).read_text()
 
 
+def readgrid() -> list[list[str]]:
+    return [list(line) for line in readlines()]
+
+
 def sgn(x: int) -> Literal[-1, 0, +1]:
     if x == 0:
         return 0
