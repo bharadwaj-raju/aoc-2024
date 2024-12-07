@@ -3,7 +3,7 @@ from math import sqrt
 import sys
 from pathlib import Path
 from typing import Iterable, Literal, Sequence
-from itertools import product
+from itertools import cycle, islice, product
 
 
 def readlines() -> list[str]:
@@ -76,3 +76,14 @@ def grid_get(grid: Sequence[Sequence[str]], pos: vec2, default: str = ".") -> st
         return grid[pos.y][pos.x]
     except IndexError:
         return default
+
+
+# from https://docs.python.org/3/library/itertools.html#itertools-recipes, "roundrobin"
+def interleave(*iterables):
+    "Visit input iterables in a cycle until each is exhausted."
+    # roundrobin('ABC', 'D', 'EF') → A D E B F C
+    # Algorithm credited to George Sakkis
+    iterators = map(iter, iterables)
+    for num_active in range(len(iterables), 0, -1):
+        iterators = cycle(islice(iterators, num_active))
+        yield from map(next, iterators)
