@@ -55,9 +55,11 @@ def causes_loop(
             break
         if curr == "#" or guard == obstacle:
             guard = guard - sym2dir[facing]
+            spot_turns = 0
             while grid_get(grid, guard + sym2dir[facing], default="O") == "#" or guard + sym2dir[facing] == obstacle:
                 facing = turn_right_90[facing]
-                if (guard, facing) in seen:
+                spot_turns += 1
+                if spot_turns >= 4:
                     return True
         if (guard, facing) in seen:
             return True
