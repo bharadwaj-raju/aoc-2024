@@ -87,3 +87,54 @@ def interleave(*iterables):
     for num_active in range(len(iterables), 0, -1):
         iterators = cycle(islice(iterators, num_active))
         yield from map(next, iterators)
+
+
+class Node[T]:
+    def __init__(self, x: T, prev: "Node[T] | None" = None, next: "Node[T] | None" = None) -> None:
+        self.x = x
+        self.prev = prev
+        self.next = next
+
+    def insert_after(self, x: T) -> "Node[T]":
+        old_next = self.next
+        self.next = Node(x, prev=self, next=old_next)
+        if old_next:
+            old_next.prev = self.next
+        return self.next
+
+    def insert_before(self, x: T) -> "Node[T]":
+        old_prev = self.prev
+        self.prev = Node(x, prev=old_prev, next=self)
+        if old_prev:
+            old_prev.next = self.prev
+        return self.prev
+
+    def remove(self) -> None:
+        match (self.prev, self.next):
+            case (None, None):
+                return
+            case (p, None):
+                p.next = None
+            case (None, n):
+                n.prev = None
+            case (p, n):
+                n.prev = p
+                p.next = n
+
+    def __iter__(self):
+        return NodeIterator(self)
+
+
+class NodeIterator[T]:
+    def __init__(self, head: Node[T] | None = None) -> None:
+        self.curr = head
+
+    def __iter__(self):
+        return NodeIterator(self.curr)
+
+    def __next__(self) -> Node[T]:
+        if not self.curr:
+            raise StopIteration
+        x = self.curr
+        self.curr = self.curr.next
+        return x
