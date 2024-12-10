@@ -8,9 +8,7 @@ def rating(grid: list[list[str]], start: vec2) -> int:
     curr = grid_get(grid, start, "-10")
     if curr == "8":
         return sum(grid_get(grid, nb) == "9" for nb in start.cardinal_neighbors())
-    return sum(
-        rating(grid, nb) for nb in start.cardinal_neighbors() if int(grid_get(grid, nb, "-10")) == int(curr) + 1
-    )
+    return sum(rating(grid, nb) for nb in start.cardinal_neighbors() if grid_get(grid, nb) == str(int(curr) + 1))
 
 
 ratingsum = 0

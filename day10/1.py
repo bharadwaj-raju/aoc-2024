@@ -10,7 +10,7 @@ def score(grid: list[list[str]], start: vec2) -> set[vec2]:
         return set(nb for nb in start.cardinal_neighbors() if grid_get(grid, nb) == "9")
     return reduce(
         set.union,
-        (score(grid, nb) for nb in start.cardinal_neighbors() if int(grid_get(grid, nb, "-10")) == int(curr) + 1),
+        (score(grid, nb) for nb in start.cardinal_neighbors() if grid_get(grid, nb) == str(int(curr) + 1)),
         set(),
     )
 
