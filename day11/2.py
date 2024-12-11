@@ -15,7 +15,7 @@ def transform(x: int) -> tuple[int] | tuple[int, int]:
     digits = floor(log10(x)) + 1
     if digits % 2 == 0:
         pow10 = 10 ** (digits // 2)
-        return (x // pow10, x % pow10)
+        return divmod(x, pow10)
     return (x * 2024,)
 
 
@@ -23,9 +23,7 @@ def transform(x: int) -> tuple[int] | tuple[int, int]:
 def stone_project(x: int, n: int) -> int:
     if n == 0:
         return 1
-    subset = [x]
-    next_subset = chain.from_iterable(transform(x) for x in subset)
-    return sum(stone_project(x, n - 1) for x in next_subset)
+    return sum(stone_project(x, n - 1) for x in transform(x))
 
 
 print(sum(stone_project(x, 75) for x in stones))
