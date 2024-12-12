@@ -81,8 +81,6 @@ for crop, regions in crops_regions.items():
     for region in regions:
         mb = merge_borders(borders(region))
         sides = sum(len(x) for x in mb.values())
-        if sides > 100:
-            print(f"{crop=} {sides=} {region[0]=}")
         # print(f"A region of {crop} plants with price {len(region)} * {sides} = {len(region) * sides}.")
         price += len(region) * sides
 
