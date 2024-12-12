@@ -1,6 +1,7 @@
 from collections import defaultdict
 from itertools import groupby
-from util import readgrid, vec2, grid_get
+
+from util import readgrid, vec2
 
 garden = readgrid()
 

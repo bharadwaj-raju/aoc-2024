@@ -1,8 +1,7 @@
 from collections import defaultdict
 from itertools import groupby
-from pprint import pp
 
-from util import readgrid, vec2, grid_get
+from util import readgrid, vec2
 
 garden = readgrid()
 
@@ -49,14 +48,14 @@ def borders(region: list[tuple[int, int]]) -> dict[vec2, list[vec2]]:
     return borders
 
 
-merge_check_dirs = {
+border_check_directions = {
     vec2(+1, 0): (vec2(0, -1), vec2(0, +1)),
     vec2(-1, 0): (vec2(0, -1), vec2(0, +1)),
     vec2(0, +1): (vec2(-1, 0), vec2(+1, 0)),
     vec2(0, -1): (vec2(-1, 0), vec2(+1, 0)),
 }
 
-merge_sort_keys = {
+border_sort_keys = {
     vec2(+1, 0): lambda v: v.y,
     vec2(-1, 0): lambda v: v.y,
     vec2(0, +1): lambda v: v.x,
@@ -67,9 +66,9 @@ merge_sort_keys = {
 def merge_borders(borders: dict[vec2, list[vec2]]):
     merged_borders: defaultdict[vec2, list[set[vec2]]] = defaultdict(list)
     for d, border_points in borders.items():
-        for border_point in sorted(border_points, key=merge_sort_keys[d]):
+        for border_point in sorted(border_points, key=border_sort_keys[d]):
             for merged in merged_borders[d]:
-                if any(border_point + offset in merged for offset in merge_check_dirs[d]):
+                if any(border_point + offset in merged for offset in border_check_directions[d]):
                     merged.add(border_point)
                     break
             else:
