@@ -1,8 +1,7 @@
 from collections.abc import Iterable
-from itertools import groupby
 from math import inf, lcm
 
-from util import readlines, vec2
+from util import readgroups, vec2
 
 
 # actually all the equations in our input have only one possible solution
@@ -70,7 +69,7 @@ def parse_group(lines: Iterable[str]) -> tuple[vec2, vec2, vec2]:
     return (a, b, prize)
 
 
-machines = [parse_group(group) for nonempty, group in groupby(readlines(), bool) if nonempty]
+machines = [parse_group(group) for group in readgroups()]
 
 tokensum = 0
 for m in machines:

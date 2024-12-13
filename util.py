@@ -3,7 +3,7 @@ from math import sqrt
 import sys
 from pathlib import Path
 from typing import Iterable, Literal, Sequence
-from itertools import cycle, islice, product
+from itertools import cycle, groupby, islice, product
 
 
 def readlines() -> list[str]:
@@ -16,6 +16,10 @@ def readtext() -> str:
 
 def readgrid() -> list[list[str]]:
     return [list(line) for line in readlines()]
+
+
+def readgroups() -> list[list[str]]:
+    return [list(g) for nonempty, g in groupby(readlines(), bool) if nonempty]
 
 
 def sgn(x: int) -> Literal[-1, 0, +1]:
