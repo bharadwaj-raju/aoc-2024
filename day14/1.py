@@ -1,6 +1,4 @@
-from pprint import pp
-
-from util import grid_get, vec2, readlines
+from util import vec2, readlines
 
 
 def parse_line(line: str) -> tuple[vec2, vec2]:

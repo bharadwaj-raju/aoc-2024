@@ -1,8 +1,6 @@
-import time
-import os
-from pprint import pp
+import gzip
 
-from util import grid_get, vec2, readlines
+from util import vec2, readlines
 
 
 def parse_line(line: str) -> tuple[vec2, vec2]:
@@ -22,33 +20,33 @@ def move(pos: vec2, vel: vec2) -> vec2:
     return vec2(new_pos.x % BOUNDS[0], new_pos.y % BOUNDS[1])
 
 
-def make_grid(robots: list[vec2]) -> list[str]:
+def make_grid(robots: list[vec2]) -> str:
     grid: list[list[str]] = []
     for y in range(BOUNDS[1]):
         row = [" "] * BOUNDS[0]
         grid.append(row)
     for pos in robots:
         grid[pos.y][pos.x] = "#"
-    return ["".join(row) for row in grid]
+    return "\n".join("".join(row) for row in grid)
 
 
+frames = []
+frame_compressed_lengths = [0] * 10_000
 seconds = 0
-while True:
-    try:
-        grid = make_grid([pos for pos, _ in robots])
-        found = False
-        for row in grid:
-            if "############" in row:
-                found = True
-                break
-        if found:
-            print("\n" * 124)
-            for row in grid:
-                print(row)
-            print(seconds)
-        robots = [(move(pos, vel), vel) for pos, vel in robots]
-        seconds += 1
-        # time.sleep(0.5)
-    except KeyboardInterrupt:
-        print("Bye!")
-        break
+for i in range(10_000):
+    frame_compressed_lengths[i] = len(gzip.compress(bytearray([pos.x for pos, _ in robots]))) + len(
+        gzip.compress(bytearray([pos.y for pos, _ in robots]))
+    )
+    frames.append([pos for pos, _ in robots])
+    robots = [(move(pos, vel), vel) for pos, vel in robots]
+    seconds += 1
+
+# import matplotlib.pyplot as plt
+
+# plt.plot(range(10_000), frame_compressed_lengths)
+# plt.show()
+
+tree_frame_num = min(enumerate(frame_compressed_lengths), key=lambda x: x[1])[0]
+
+print(make_grid(frames[tree_frame_num]))
+print(tree_frame_num)
