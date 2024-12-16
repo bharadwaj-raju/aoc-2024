@@ -12,26 +12,9 @@ def cost(current: vec2, next: vec2, facing: vec2) -> int:
     return 1000 + current.manhattan(next)
 
 
-@cache
-def path_cost(path: tuple[vec2], initial_facing: vec2) -> int:
-    so_far = 0
-    curr = path[0]
-    facing = initial_facing
-    for next in path[1:]:
-        so_far += cost(curr, next, facing)
-        facing = next - curr
-        curr = next
-    return so_far
-
-
 def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) -> tuple[int, dict[vec2, vec2 | None]]:
     def heuristic(goal: vec2, next: vec2) -> int:
         return next.manhattan(goal)
-
-    def cost(current: vec2, next: vec2, facing: vec2) -> int:
-        if next - current == facing:
-            return current.manhattan(next)
-        return 1000 + current.manhattan(next)
 
     frontier = [(0, start, initial_facing)]
     heapify(frontier)
