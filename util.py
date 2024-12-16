@@ -48,8 +48,8 @@ class vec2:
         return [vec2(x, y) for x, y in product([+1, -1, 0], repeat=2) if (x, y) != (0, 0)]
 
     @staticmethod
-    def cardinal_directions() -> list["vec2"]:
-        return [vec2(x, y) for x, y in ((+1, 0), (-1, 0), (0, -1), (0, +1))]
+    def cardinal_directions() -> tuple["vec2", "vec2", "vec2", "vec2"]:
+        return CARDINAL_DIRECTIONS
 
     def __add__(self, other: "vec2") -> "vec2":
         return vec2(self.x + other.x, self.y + other.y)
@@ -74,6 +74,9 @@ class vec2:
 
     def __repr__(self) -> str:
         return f"({self.x}, {self.y})"
+
+
+CARDINAL_DIRECTIONS = (vec2(+1, 0), vec2(-1, 0), vec2(0, -1), vec2(0, +1))
 
 
 def grid_get(grid: Sequence[Sequence[str]], pos: vec2, default: str = ".") -> str:
@@ -145,3 +148,15 @@ class NodeIterator[T]:
         x = self.curr
         self.curr = self.curr.next
         return x
+
+
+def display_grid(grid: list[list[str]], highlight_o: Iterable[vec2], highlight_x: Iterable[vec2]):
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            if vec2(x, y) in highlight_o:
+                print("O", end="")
+            elif vec2(x, y) in highlight_x:
+                print("X", end="")
+            else:
+                print(cell, end="")
+        print()
