@@ -74,9 +74,6 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) 
 def a_star_star(
     grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2, cost_limit: int
 ) -> tuple[dict, list[tuple[vec2, ...]]]:
-    def heuristic(goal: vec2, next: vec2) -> int:
-        return next.manhattan(goal)
-
     def cost(current: vec2, next: vec2, facing: vec2) -> int:
         if next - current == facing:
             return current.manhattan(next)
@@ -85,72 +82,32 @@ def a_star_star(
     frontier = [(0, start, initial_facing, [start])]
     heapify(frontier)
     came_from: defaultdict[vec2, set[vec2]] = defaultdict(set)
-    # cost_so_far: defaultdict[vec2, int | float] = defaultdict(lambda: float("inf"))
-    # cost_so_far[start] = 0
+    cost_so_far: defaultdict[tuple[vec2, vec2], int | float] = defaultdict(lambda: float("inf"))
+    cost_so_far[(start, initial_facing)] = 0
     paths: defaultdict[tuple[vec2, vec2], list[tuple[vec2, ...]]] = defaultdict(list)
     paths[(start, initial_facing)].append((start,))
-
-    done = []
 
     while frontier:
         print(f"remaining: {len(frontier)}", end="\r")
         current_dist, current, facing, path = heappop(frontier)
-        # print(current)
-        # if current_dist > cost_so_far[current]:
-        #     continue
-        # cost_so_far[current] = current_dist
-        # if current == end:
-        #     break
-        # import os
-
-        # if True or current in [vec2(5, 7), vec2(3, 7), vec2(3, 9), vec2(4, 7)]:
-        # os.system("clear")
-        # display(grid, [current], list(chain(*paths[(current, facing)])))
-        # print(current)
-        # print(current_dist)
-        # print(paths[(current, facing)])
-        # print("!!!!!!!!!!!!!!!!!!")
-        # input()
         for next in current.cardinal_neighbors():
-            # if current == vec2(3, 10) and next == vec2(3, 9):
-            #     print("HEY")
-            #     print(current, next)
             if grid_get(grid, next, default="#") == "#":
-                # if next == vec2(3, 9):
-                #     print("???")
                 continue
             new_cost = current_dist + cost(current, next, facing)
             known_cost = float("inf")
             if paths[(next, facing)]:
-                # print(f"already seen {next}")
                 known_cost = path_cost(paths[(next, facing)][0], initial_facing)
             if new_cost < known_cost:
-                # cost_so_far[next] = new_cost
                 paths[(next, facing)] = [(*path, next)]  # [path + [next]]
                 priority = new_cost  # + heuristic(end, next)
                 new_facing = next - current
-                # if current == vec2(3, 10) and next == vec2(3, 9):
-                #     print("pushing...?")
                 if new_cost <= cost_limit:
                     heappush(frontier, (priority, next, new_facing, path + [next]))
                 came_from[next].add(current)
             elif new_cost == known_cost:
-                # print("!!!")
-                # print(next)
-                # if current == vec2(3, 10) and next == vec2(3, 9):
-                #     print("pushing...?")
-                paths[(next, facing)].append((*path, next))
-                heappush(frontier, (new_cost, next, next - current, path + [next]))
-            # elif new_cost < cost_limit:
-            #     paths[(next, facing)].append((*path, next))
-            # if not any(n == next for _, n, _, _ in frontier):
-            #     heappush(frontier, (new_cost, next, next - current, path + [next]))
-
-            # if (new_cost, next, next - current, path + [next]) not in frontier:
-            # if current == vec2(4, 7) and next == vec2(5, 7):
-            #     # ...
-            #     print(f"too much. new cost was {new_cost} vs {known_cost}")
-        # input()
+                if new_cost <= cost_limit:
+                    paths[(next, facing)].append((*path, next))
+                    heappush(frontier, (new_cost, next, next - current, path + [next]))
     print()
     all_facings = vec2.cardinal_directions()
     return paths, list(chain(*(paths[(end, f)] for f in all_facings)))
@@ -181,7 +138,6 @@ paths, all_paths = a_star_star(grid, start, end, facing, lowest_cost)
 best_seats = set()
 
 for p in all_paths:
-    if path_cost(p, facing) == lowest_cost:
-        best_seats.update(p)
+    best_seats.update(p)
 
 print(len(best_seats))
