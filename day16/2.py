@@ -67,7 +67,6 @@ def a_star_star(
 
     frontier = [(0, start, initial_facing, [start])]
     heapify(frontier)
-    came_from: defaultdict[vec2, set[vec2]] = defaultdict(set)
     cost_so_far: defaultdict[tuple[vec2, vec2], int | float] = defaultdict(lambda: float("inf"))
     cost_so_far[(start, initial_facing)] = 0
     paths: defaultdict[tuple[vec2, vec2], list[tuple[vec2, ...]]] = defaultdict(list)
@@ -84,13 +83,12 @@ def a_star_star(
             if paths[(next, facing)]:
                 known_cost = cost_so_far[(next, facing)]
             if new_cost < known_cost:
-                paths[(next, facing)] = [(*path, next)]  # [path + [next]]
+                paths[(next, facing)] = [(*path, next)]
                 cost_so_far[((next, facing))] = new_cost
-                priority = new_cost  # + heuristic(end, next)
+                priority = new_cost
                 new_facing = next - current
                 if new_cost <= cost_limit:
                     heappush(frontier, (priority, next, new_facing, path + [next]))
-                came_from[next].add(current)
             elif new_cost == known_cost:
                 if new_cost <= cost_limit:
                     paths[(next, facing)].append((*path, next))
