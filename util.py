@@ -30,7 +30,7 @@ def sgn(x: int) -> Literal[-1, 0, +1]:
     return +1
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, order=True)
 class vec2:
     x: int
     y: int
