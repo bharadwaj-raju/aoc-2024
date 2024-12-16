@@ -72,6 +72,9 @@ class vec2:
     def cardinal_neighbors(self) -> list["vec2"]:
         return [self + delta for delta in vec2.cardinal_directions()]
 
+    def __repr__(self) -> str:
+        return f"({self.x}, {self.y})"
+
 
 def grid_get(grid: Sequence[Sequence[str]], pos: vec2, default: str = ".") -> str:
     if pos.x < 0 or pos.y < 0:

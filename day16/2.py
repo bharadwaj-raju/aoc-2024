@@ -20,27 +20,36 @@ def path_cost(path: list[vec2], initial_facing: vec2) -> int:
         so_far += cost(curr, next, facing)
         facing = next - curr
         curr = next
-    return so_far + 1
+    return so_far
 
 
-def all_paths(grid: list[list[str]], start: vec2, end: vec2, path=None) -> list[list[vec2]]:
-    from_here = []
-    if path is None:
-        path = [start]
-    # print(f"all_paths({start=})")
-    for next in start.cardinal_neighbors():
-        if next == end:
-            from_here.append([next, end])
-        if next in path or grid_get(grid, next, default="#") == "#":
+def all_paths(
+    grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2, cost_limit: int
+) -> list[list[vec2]]:
+    paths = []
+
+    stack = [(start, [start], set([start]), initial_facing, 0)]  # (current position, current path, visited set)
+
+    while stack:
+        print(f"found: {len(paths)} remaining: {len(stack)}", end="\r")
+        curr, path, visited, facing, cost_so_far = stack.pop()
+
+        if curr == end:
+            paths.append(path)
             continue
-        # print(f"\t{next}")
-        if True or next != end:
-            try:
-                for branch in all_paths(grid, next, end, path + [next]):
-                    from_here.append([next, *branch])
-            except RecursionError:
-                pass
-    return from_here
+
+        # Explore all four directions
+        for nb in curr.cardinal_neighbors():
+            if grid_get(grid, nb, "#") == "#":
+                continue
+            new_cost = cost_so_far + cost(curr, nb, facing)
+            if new_cost > cost_limit:
+                # print("over limit")
+                continue
+            if nb not in visited:
+                stack.append((nb, path + [nb], visited | {nb}, nb - curr, new_cost))
+
+    return paths
 
 
 grid = readgrid()
@@ -60,11 +69,13 @@ assert end is not None
 facing = vec2(+1, 0)  # east
 
 
-def display(grid: list[list[str]], highlight: Iterable[vec2]):
+def display(grid: list[list[str]], highlight_o: Iterable[vec2], highlight_x: Iterable[vec2]):
     for y, row in enumerate(grid):
         for x, cell in enumerate(row):
-            if vec2(x, y) in highlight:
+            if vec2(x, y) in highlight_o:
                 print("O", end="")
+            elif vec2(x, y) in highlight_x:
+                print("X", end="")
             else:
                 print(cell, end="")
         print()
@@ -94,9 +105,9 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) 
             if grid_get(grid, next, default="#") == "#":
                 continue
             new_cost = cost_so_far[current] + cost(current, next, facing)
-            if next not in cost_so_far or new_cost < cost_so_far[next]:
+            if next not in cost_so_far or new_cost <= cost_so_far[next]:
                 cost_so_far[next] = new_cost
-                priority = new_cost + heuristic(end, next)
+                priority = new_cost  # + heuristic(end, next)
                 new_facing = next - current
                 heappush(frontier, (priority, next, new_facing))
                 came_from[next].add(current)
@@ -105,30 +116,54 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) 
 
 lowest_cost, came_from = a_star(grid, start, end, facing)
 
-for c in came_from.values():
-    if len(c) > 1:
-        display(grid, c)
 
-ap = all_paths(grid, start, end)
+def cf2path(came_from):
+    path = []
+    curr = {end}
+    while curr != {start}:
+        path.extend(curr)
+        # for c in curr:
+        #     print(came_from[c])
+        curr = set.union(*[came_from[c] for c in curr])
+        if len(curr) > 1:
+            print("!!!!!!!!")
+    path.reverse()
+    return path
+
+
+# display(grid, cf2path(came_from), [])
+
+# best_seats = set(cf2path(came_from))
+
+# for n, c in came_from.items():
+#     if len(c) > 1:
+#         print(c)
+#         for p in c:
+#             grid_c = [row.copy() for row in grid]
+#             grid_c[p.y][p.x] = "#"
+#             display(grid_c, [], [])
+#             try_cost, try_came_from = a_star(grid_c, start, end, facing)
+#             if try_cost <= lowest_cost:
+#                 best_seats.update(cf2path(try_came_from))
+
+
+# print(len(best_seats))
+
+
+import sys
+
+# sys.exit(1)
+ap = all_paths(grid, start, end, facing, lowest_cost)
+
 
 best_seats = set()
 
 for path in ap:
-    grid_c = [row.copy() for row in grid]
-    if path[-1] != end:
-        continue
     pc = path_cost(path, initial_facing=facing)
-    if pc > 13000:
-        continue
-    if pc == lowest_cost + 1000:
-        print("ayyyyyyyy")
+    if pc == lowest_cost:
         best_seats.update(path)
-    for el in path:
-        grid_c[el.y][el.x] = "O"
-    print("\n".join("".join(row) for row in grid_c))
-    print(pc)
 
-print("ANS", len(best_seats) + 1)
+print("ANS", len(best_seats))
 
 # lowest_cost, came_from, costs_so_far = breadth_first(grid, start, end, facing)
 
