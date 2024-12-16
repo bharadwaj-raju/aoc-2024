@@ -60,11 +60,6 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) 
 def a_star_star(
     grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2, cost_limit: int
 ) -> list[tuple[vec2, ...]]:
-    def cost(current: vec2, next: vec2, facing: vec2) -> int:
-        if next - current == facing:
-            return current.manhattan(next)
-        return 1000 + current.manhattan(next)
-
     frontier = [(0, start, initial_facing, [start])]
     heapify(frontier)
     cost_so_far: defaultdict[tuple[vec2, vec2], int | float] = defaultdict(lambda: float("inf"))
