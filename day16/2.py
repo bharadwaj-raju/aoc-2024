@@ -1,4 +1,5 @@
 from collections import defaultdict, deque
+from collections.abc import Iterable, Sequence
 from functools import cache
 from itertools import pairwise
 from heapq import heapify, heappop, heappush
@@ -22,21 +23,6 @@ def path_cost(path: list[vec2], initial_facing: vec2) -> int:
     return so_far + 1
 
 
-def breadth_first(grid: list[list[str]], start: vec2) -> dict[vec2, set[vec2]]:
-    frontier = deque()
-    frontier.append(start)
-    came_from: defaultdict[vec2, set[vec2]] = defaultdict(set)
-    while frontier:
-        current = frontier.popleft()
-        for next in current.cardinal_neighbors():
-            if grid_get(grid, next, default="#") == "#":
-                continue
-            if next not in came_from:
-                new_facing = next - current
-                came_from[next].add(current)
-    return came_from
-
-
 def all_paths(grid: list[list[str]], start: vec2, end: vec2, path=None) -> list[list[vec2]]:
     from_here = []
     if path is None:
@@ -57,41 +43,6 @@ def all_paths(grid: list[list[str]], start: vec2, end: vec2, path=None) -> list[
     return from_here
 
 
-def full_search(
-    grid: list[list[str]],
-    start: vec2,
-    end: vec2,
-    facing: vec2,
-    cost_so_far: int = 0,
-    cost_limit: int | None = None,
-    visited: set[tuple[vec2, vec2]] = set(),
-) -> list[tuple[int, list[vec2]]]:
-    print(f"dfs({start=}, {cost_so_far=})")
-    from_here: list[tuple[int, list[vec2]]] = []
-    for next in start.cardinal_neighbors():
-        if next == vec2(4, 9):
-            print(f"!!!!!!!!!!! {cost_so_far}")
-        new_facing = next - start
-        if (next, start) in visited:
-            if next == vec2(4, 9):
-                print("!!")
-            # print(f"seen {(next, new_facing)}")
-            continue
-        visited.add((next, start))
-        new_cost = cost_so_far + cost(start, next, facing)
-        if cost_limit is not None and new_cost > cost_limit:
-            print(f"over cost limit {next=}, {cost_so_far=}, {cost_limit=}, {new_cost=}")
-            continue
-        if grid_get(grid, next, default="#") == "#":
-            continue
-        grid[next.y][next.x] = "O"
-        if next == end:
-            from_here.append((new_cost, [start, next]))
-        else:
-            from_here.extend(full_search(grid, next, end, new_facing, new_cost, cost_limit, visited))
-    return from_here
-
-
 grid = readgrid()
 
 start = None
@@ -109,7 +60,17 @@ assert end is not None
 facing = vec2(+1, 0)  # east
 
 
-def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) -> tuple[int, dict[vec2, vec2 | None]]:
+def display(grid: list[list[str]], highlight: Iterable[vec2]):
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            if vec2(x, y) in highlight:
+                print("O", end="")
+            else:
+                print(cell, end="")
+        print()
+
+
+def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) -> tuple[int, dict[vec2, set[vec2]]]:
     def heuristic(goal: vec2, next: vec2) -> int:
         return next.manhattan(goal)
 
@@ -120,9 +81,8 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) 
 
     frontier = [(0, start, initial_facing)]
     heapify(frontier)
-    came_from: dict[vec2, vec2 | None] = {}
+    came_from: defaultdict[vec2, set[vec2]] = defaultdict(set)
     cost_so_far: dict[vec2, int] = {}
-    came_from[start] = None
     cost_so_far[start] = 0
 
     while frontier:
@@ -139,11 +99,15 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2, initial_facing: vec2) 
                 priority = new_cost + heuristic(end, next)
                 new_facing = next - current
                 heappush(frontier, (priority, next, new_facing))
-                came_from[next] = current
+                came_from[next].add(current)
     return (cost_so_far[end], came_from)
 
 
-lowest_cost, _ = a_star(grid, start, end, facing)
+lowest_cost, came_from = a_star(grid, start, end, facing)
+
+for c in came_from.values():
+    if len(c) > 1:
+        display(grid, c)
 
 ap = all_paths(grid, start, end)
 
