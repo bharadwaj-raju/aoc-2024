@@ -3,6 +3,8 @@ from itertools import batched, product
 
 from util import readgroups
 
+CUSTOM_OPCODE = 99
+
 operations = {
     0: "adv",
     1: "bxl",
@@ -12,6 +14,8 @@ operations = {
     5: "out",
     6: "bdv",
     7: "cdv",
+    # custom opcode to replace jnz in the input program, jnt = "jump if not equal to register 'T'"
+    CUSTOM_OPCODE: "jnt",
 }
 
 
@@ -73,7 +77,13 @@ def compute(registers: dict[str, int], program: Sequence[int], verbose=False) ->
             ip += 2
         elif op == "jnz":
             if registers["A"] != 0:
-                log(f"JUMP 0 (A = {o(registers['A'])})")
+                log(f"JUMP {operand} (A = {o(registers['A'])})")
+                ip = operand
+            else:
+                ip += 2
+        elif op == "jnt":
+            if registers["A"] != registers["T"]:
+                log(f"JUMP {operand} (A = {o(registers['A'])}")
                 ip = operand
             else:
                 ip += 2
@@ -97,22 +107,23 @@ def compute(registers: dict[str, int], program: Sequence[int], verbose=False) ->
     return (output, registers)
 
 
-registers, program = readgroups()
-registers = {reg.split(": ")[0][-1]: int(reg.split(": ")[-1]) for reg in registers}
-program = [int(x) for x in program[0].split(": ")[-1].split(",")]
+registers_raw, program_raw = readgroups()
+registers = {reg.split(": ")[0][-1]: int(reg.split(": ")[-1]) for reg in registers_raw}
+program = [int(x) for x in program_raw[0].split(": ")[-1].split(",")]
 
 
-# written based on disassembly, this will probably need to be modified for other inputs
+# modifies input program to replace JNZ -> JNT
+def patch(program: Sequence[int]) -> list[int]:
+    mod = []
+    for opcode, operand in batched(program, 2):
+        if operations[opcode] == "jnz":
+            opcode = CUSTOM_OPCODE
+        mod.extend((opcode, operand))
+    return mod
+
+
 def f(A, A_target):
-    out = []
-    while A != A_target:
-        B = A % 8
-        B = B ^ 1
-        C = A // (2**B)
-        B = B ^ 5
-        B = B ^ C
-        out.append(B % 8)
-        A = A // 8
+    out, _ = compute(registers | {"A": A, "T": A_target}, patch(program))
     return out
 
 
