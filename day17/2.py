@@ -22,13 +22,18 @@ def o(x):
 combo_opcodes = ("bst", "out", "adv", "bdv", "cdv")
 
 
+def combo_repr(operand: int) -> str | int:
+    if 0 <= operand <= 3:
+        return operand
+    return "ABC"[operand - 4]
+
+
 def disassemble(program: Sequence[int]) -> list[tuple[str, str | int]]:
     assembly = []
     for opcode, operand in batched(program, 2):
         name = operations[opcode]
         if name in combo_opcodes:
-            if operand > 3:
-                operand = "ABC"[operand - 4]
+            operand = combo_repr(operand)
         assembly.append((name, operand))
     return assembly
 
@@ -39,12 +44,6 @@ def combo(registers: dict[str, int], operand: int) -> int:
     if 0 <= operand <= 3:
         return operand
     return registers["ABC"[operand - 4]]
-
-
-def combo_repr(operand: int) -> str:
-    if 0 <= operand <= 3:
-        return f"{operand}"
-    return "ABC"[operand - 4]
 
 
 def compute(registers: dict[str, int], program: Sequence[int], verbose=False) -> tuple[list[int], dict[str, int]]:
