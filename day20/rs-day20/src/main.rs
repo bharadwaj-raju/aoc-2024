@@ -5,6 +5,7 @@ use std::{
 };
 
 use itertools::Itertools;
+use rayon::prelude::*;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 struct Vec2 {
@@ -168,20 +169,42 @@ fn a_star(grid: Grid, start: Vec2, end: Vec2) -> Option<(usize, Vec<Vec2>)> {
     Some((cost[&end], path))
 }
 
-fn find_cheats(path: &[Vec2], max_cheat_time: usize, min_savings: usize) -> usize {
+fn find_cheats_from(
+    path: &[Vec2],
+    max_cheat_time: usize,
+    min_savings: usize,
+    start_time: usize,
+) -> usize {
     let mut viable = 0;
-    for (start_time, cheat_start) in path.iter().enumerate() {
-        if start_time > path.len() - min_savings {
-            break;
-        }
-        for (normal_end_time, cheat_end) in path.iter().enumerate().skip(start_time + min_savings) {
-            let cheat_dist = cheat_start.manhattan(*cheat_end) as usize;
+    let cheat_start = path[start_time];
+    if start_time > path.len() - min_savings {
+        return 0;
+    }
+    let mut normal_end_time = start_time + min_savings;
+    while normal_end_time < path.len() {
+        let cheat_end = path[normal_end_time];
+        let cheat_dist = cheat_start.manhattan(cheat_end) as usize;
+        if cheat_dist > max_cheat_time {
+            // if we find a point on the path that is (cheat_dist - max_cheat_time) further out than our manhattan radius
+            // then we can skip that many points on the path
+            // since it is not possible for the path to return to the radius area in less steps than that
+            // thanks to @Stickie (https://github.com/FieryIceStickie) for this idea
+            normal_end_time += cheat_dist - max_cheat_time;
+        } else {
             let cheat_end_time = start_time + cheat_dist;
             let savings = normal_end_time - cheat_end_time;
             if cheat_dist <= max_cheat_time && savings >= min_savings {
                 viable += 1;
             }
+            normal_end_time += 1;
         }
     }
     viable
+}
+
+fn find_cheats(path: &[Vec2], max_cheat_time: usize, min_savings: usize) -> usize {
+    (0..path.len())
+        .par_bridge()
+        .map(|start_time| find_cheats_from(path, max_cheat_time, min_savings, start_time))
+        .sum()
 }
