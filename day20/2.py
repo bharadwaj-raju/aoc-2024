@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from heapq import heapify, heappop, heappush
 from functools import cache
+import math
 
 from util import grid_get, readgrid, vec2
 
@@ -75,11 +76,22 @@ at_least = 0
 for start_time, cheat_start in enumerate(normal_path):
     if start_time > len(normal_path) - AT_LEAST:
         break
-    for cheat_end in normal_path[start_time + AT_LEAST :]:
-        cheat_dist = cheat_start.manhattan(cheat_end)
-        normal_end_time = normal_path_indices[cheat_end]
-        cheat_end_time = start_time + cheat_dist
-        if cheat_dist <= MAX_CHEAT_LEN and (normal_end_time - cheat_end_time) >= AT_LEAST:
-            at_least += 1
+
+    i = start_time + AT_LEAST
+    while i < len(normal_path):
+        cheat_end = normal_path[i]
+        cheat_dist = cheat_end.manhattan(cheat_start)
+        if cheat_dist > MAX_CHEAT_LEN:
+            # if we find a point on the path that is (cheat_dist - MAX_CHEAT_LEN) further out than our manhattan radius
+            # then we can skip that many points on the path
+            # since it is not possible for the path to return to the radius area in less steps than that
+            # thanks to @Stickie (https://github.com/FieryIceStickie) for this idea
+            i += math.ceil(cheat_dist - MAX_CHEAT_LEN)
+        else:
+            cheat_end_time = start_time + cheat_dist
+            savings = i - cheat_end_time
+            if savings >= AT_LEAST:
+                at_least += 1
+            i += 1
 
 print(f"{at_least} cheats would save at least {AT_LEAST} picoseconds.")

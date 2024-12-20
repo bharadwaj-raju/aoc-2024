@@ -1,3 +1,4 @@
+from collections.abc import Generator
 from typing import NamedTuple
 from functools import cache
 from math import sqrt
@@ -65,6 +66,10 @@ class vec2(NamedTuple):
 
     def manhattan(self, other: "vec2") -> int:
         return abs(self.x - other.x) + abs(self.y - other.y)
+
+    def manhattan_neighborhood(self, radius: int) -> Generator["vec2"]:
+        for dy, dx in product(range(-(radius), (radius) + 1), repeat=2):
+            yield self + vec2(dx, dy)
 
     @cache
     def all_neighbors(self) -> list["vec2"]:
