@@ -1,4 +1,3 @@
-from collections import defaultdict
 from heapq import heapify, heappop, heappush
 from functools import cache
 
@@ -19,7 +18,7 @@ assert start is not None
 assert end is not None
 
 
-def a_star(grid: list[list[str]], start: vec2, end: vec2) -> tuple[int, dict[vec2, vec2 | None]]:
+def a_star(start: vec2, end: vec2) -> tuple[int, dict[vec2, vec2 | None]]:
     @cache
     def heuristic(next: vec2) -> int:
         return next.manhattan(end)
@@ -47,15 +46,6 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2) -> tuple[int, dict[vec
     return (cost_so_far[end], came_from)
 
 
-def viable_cheats(grid: list[list[str]], curr: vec2) -> list[tuple[vec2, vec2]]:
-    return [
-        (curr, end)
-        for first in curr.cardinal_neighbors()
-        for end in first.cardinal_neighbors()
-        if grid_get(grid, end, "#") != "#" and curr != end
-    ]
-
-
 def construct_path(came_from: dict[vec2, vec2 | None], start: vec2, end: vec2) -> list[vec2]:
     path = [end]
     while path[-1] != start:
@@ -66,28 +56,29 @@ def construct_path(came_from: dict[vec2, vec2 | None], start: vec2, end: vec2) -
     return path
 
 
-normal_time, normal_came_from = a_star(grid, start, end)
+normal_time, normal_came_from = a_star(start, end)
 normal_path = construct_path(normal_came_from, start, end)
 
 normal_path_indices = {point: i for i, point in enumerate(normal_path)}
 
-cheat_savings: defaultdict[int, set[tuple[vec2, vec2]]] = defaultdict(set)
+MAX_CHEAT_LEN = 20
 
-for cost_so_far, point in enumerate(normal_path):
-    for cheat in viable_cheats(grid, point):
-        _, cheat_end = cheat
-        try:
-            jump_to = normal_path_indices[cheat_end]
-            cheat_time = cost_so_far + 2 + (normal_time - jump_to)
-            if cheat_time < normal_time:
-                cheat_savings[normal_time - cheat_time].add(cheat)
-        except IndexError:
-            pass
 
-at_least_100 = 0
-for savings in sorted(cheat_savings.keys()):
-    # print(f"There are {len(cheat_savings[savings])} cheats that save {savings} picoseconds.")
-    if savings >= 100:
-        at_least_100 += len(cheat_savings[savings])
+def is_viable(cheat_start: vec2, cheat_end: vec2) -> bool:
+    return cheat_start.manhattan(cheat_end) <= MAX_CHEAT_LEN
 
-print(f"{at_least_100} cheats would save at least 100 picoseconds.")
+
+AT_LEAST = 100
+
+at_least: set[tuple[vec2, vec2]] = set()
+for start_time, cheat_start in enumerate(normal_path):
+    if start_time > len(normal_path) - AT_LEAST:
+        break
+    for cheat_end in normal_path[start_time + AT_LEAST :]:
+        cheat_dist = cheat_start.manhattan(cheat_end)
+        normal_end_time = normal_path_indices[cheat_end]
+        cheat_end_time = start_time + cheat_dist
+        if cheat_dist <= MAX_CHEAT_LEN and (normal_end_time - cheat_end_time) >= AT_LEAST:
+            at_least.add((cheat_start, cheat_end))
+
+print(f"{len(at_least)} cheats would save at least {AT_LEAST} picoseconds.")

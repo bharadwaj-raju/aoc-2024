@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from functools import cache
 from math import sqrt
 import sys
 from pathlib import Path
@@ -66,9 +67,11 @@ class vec2:
     def manhattan(self, other: "vec2") -> int:
         return abs(self.x - other.x) + abs(self.y - other.y)
 
+    @cache
     def all_neighbors(self) -> list["vec2"]:
         return [self + delta for delta in vec2.all_directions()]
 
+    @cache
     def cardinal_neighbors(self) -> list["vec2"]:
         return [self + delta for delta in vec2.cardinal_directions()]
 
@@ -153,10 +156,10 @@ class NodeIterator[T]:
 def display_grid(grid: list[list[str]], highlight_o: Iterable[vec2], highlight_x: Iterable[vec2]):
     for y, row in enumerate(grid):
         for x, cell in enumerate(row):
-            if vec2(x, y) in highlight_o:
-                print("O", end="")
-            elif vec2(x, y) in highlight_x:
+            if vec2(x, y) in highlight_x:
                 print("X", end="")
+            elif vec2(x, y) in highlight_o:
+                print("O", end="")
             else:
                 print(cell, end="")
         print()
