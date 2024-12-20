@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dataclasses import dataclass, field
 from heapq import heapify, heappop, heappush
 from functools import cache
 
@@ -20,11 +21,16 @@ assert end is not None
 
 
 def a_star(grid: list[list[str]], start: vec2, end: vec2) -> tuple[int, dict[vec2, vec2 | None]]:
+    @dataclass(frozen=True, order=True)
+    class Item:
+        priority: int
+        point: vec2 = field(compare=False)
+
     @cache
     def heuristic(next: vec2) -> int:
         return next.manhattan(end)
 
-    frontier = [(0, start)]
+    frontier = [Item(0, start)]
     heapify(frontier)
     came_from: dict[vec2, vec2 | None] = {}
     cost_so_far: dict[vec2, int] = {}
@@ -32,7 +38,7 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2) -> tuple[int, dict[vec
     cost_so_far[start] = 0
 
     while frontier:
-        current = heappop(frontier)[1]
+        current = heappop(frontier).point
         if current == end:
             break
         for next in current.cardinal_neighbors():
@@ -42,7 +48,7 @@ def a_star(grid: list[list[str]], start: vec2, end: vec2) -> tuple[int, dict[vec
             if next not in cost_so_far or new_cost < cost_so_far[next]:
                 cost_so_far[next] = new_cost
                 priority = new_cost + heuristic(next)
-                heappush(frontier, (priority, next))
+                heappush(frontier, Item(priority, next))
                 came_from[next] = current
     return (cost_so_far[end], came_from)
 
@@ -81,7 +87,7 @@ for cost_so_far, point in enumerate(normal_path):
             cheat_time = cost_so_far + 2 + (normal_time - jump_to)
             if cheat_time < normal_time:
                 cheat_savings[normal_time - cheat_time].add(cheat)
-        except IndexError:
+        except KeyError:
             pass
 
 at_least_100 = 0

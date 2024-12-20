@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from typing import NamedTuple
 from functools import cache
 from math import sqrt
 import sys
@@ -31,8 +31,7 @@ def sgn(x: int) -> Literal[-1, 0, +1]:
     return +1
 
 
-@dataclass(frozen=True, order=True)
-class vec2:
+class vec2(NamedTuple):
     x: int
     y: int
 
@@ -52,7 +51,7 @@ class vec2:
     def cardinal_directions() -> tuple["vec2", "vec2", "vec2", "vec2"]:
         return CARDINAL_DIRECTIONS
 
-    def __add__(self, other: "vec2") -> "vec2":
+    def __add__(self, other: "vec2") -> "vec2":  # type: ignore
         return vec2(self.x + other.x, self.y + other.y)
 
     def __sub__(self, other: "vec2") -> "vec2":
@@ -81,12 +80,34 @@ class vec2:
 
 CARDINAL_DIRECTIONS = (vec2(+1, 0), vec2(-1, 0), vec2(0, -1), vec2(0, +1))
 
+vec2f = complex
+
+CARDINAL_DIRECTIONS_VEC2F = (+1 + 0j, -1 + 0j, 0 - 1j, 0 + 1j)
+
+
+@cache
+def cardinal_neighbors(p: vec2f) -> list[vec2f]:
+    return [p + delta for delta in CARDINAL_DIRECTIONS_VEC2F]
+
+
+def manhattan(a: vec2f, b: vec2f) -> int:
+    return int(abs(a.real - b.real) + abs(a.imag - b.imag))
+
 
 def grid_get(grid: Sequence[Sequence[str]], pos: vec2, default: str = ".") -> str:
     if pos.x < 0 or pos.y < 0:
         return default
     try:
         return grid[pos.y][pos.x]
+    except IndexError:
+        return default
+
+
+def grid_get_vec2f(grid: Sequence[Sequence[str]], pos: vec2f, default: str = ".") -> str:
+    if pos.real < 0 or pos.imag < 0:
+        return default
+    try:
+        return grid[int(pos.imag)][int(pos.real)]
     except IndexError:
         return default
 
@@ -159,6 +180,18 @@ def display_grid(grid: list[list[str]], highlight_o: Iterable[vec2], highlight_x
             if vec2(x, y) in highlight_x:
                 print("X", end="")
             elif vec2(x, y) in highlight_o:
+                print("O", end="")
+            else:
+                print(cell, end="")
+        print()
+
+
+def display_grid_vec2f(grid: list[list[str]], highlight_o: Iterable[vec2f], highlight_x: Iterable[vec2f]):
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            if vec2f(x, y) in highlight_x:
+                print("X", end="")
+            elif vec2f(x, y) in highlight_o:
                 print("O", end="")
             else:
                 print(cell, end="")
