@@ -49,14 +49,14 @@ dir2sym = {
 
 
 @cache
-def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]) -> list[vec2]:
+def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]) -> list[list[vec2]]:
     # never move onto a gap!
-    if src == dst:
-        return []
     keymap = NUMPAD if keymap_name == "NUMPAD" else DPAD
     src_pos = keymap[src]
     dst_pos = keymap[dst]
     neighbors = src_pos.cardinal_neighbors()
+    if src == dst:
+        return [[]]
 
     def score(k: str) -> int:
         return keymap[k].manhattan(src_pos) + keymap[k].manhattan(dst_pos)
@@ -64,41 +64,34 @@ def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]
     def valid(k: str) -> bool:
         return k != "X" and k != src and keymap[k] in neighbors
 
-    next = min(filter(valid, keymap), key=score)
-    return [keymap[next] - keymap[src], *move_towards_safe(next, dst, keymap_name)]
+    lowest_score = min(map(score, filter(valid, keymap)))
+    lowest_nexts = [k for k in keymap if valid(k) and score(k) == lowest_score]
+    valid_moves = [
+        [keymap[eq] - src_pos, *further] for eq in lowest_nexts for further in move_towards_safe(eq, dst, keymap_name)
+    ]
+    return valid_moves
 
 
 @cache
-def move_sequence(keyseq: Iterable[str], keymap_name: Literal["NUMPAD", "DPAD"]) -> list[str]:
-    moveseq = []
+def move_sequence(keyseq: Iterable[str], keymap_name: Literal["NUMPAD", "DPAD"]) -> list[list[str]]:
+    moveseqs: list[list[list[str]]] = []
     curr = "A"
     for key in keyseq:
-        moveseq.extend(dir2sym[v] for v in move_towards_safe(curr, key, keymap_name))
-        moveseq.append("A")
+        variants = move_towards_safe(curr, key, keymap_name)
+        moveseqs.append([[dir2sym[move] for move in variant] + ["A"] for variant in variants])
         curr = key
-    return moveseq
-
-
-def gen_variants(moveseq: Iterable[str]) -> Generator[str]:
-    moveseq = "".join(moveseq)
-    for variant in product(*(permutations(part) for part in moveseq.split("A"))):
-        yield "A".join("".join(part) for part in variant)
-
-
-def is_safe(moveseq: Iterable[str]) -> bool:
-    return True
+    return [list(chain(*x)) for x in product(*moveseqs)]
 
 
 def your_moves(code: str) -> int:
-    return len(
-        min(
-            map(
-                lambda variant: move_sequence(variant, "DPAD"),
-                chain(*(gen_variants(move_sequence(v, "DPAD")) for v in gen_variants(move_sequence(code, "NUMPAD")))),
-            ),
-            key=len,
-        )
-    )
+    lowest = None
+    for numpad_variant in move_sequence(code, "NUMPAD"):
+        for dpad1_variant in move_sequence("".join(numpad_variant), "DPAD"):
+            for dpad2_variant in move_sequence("".join(dpad1_variant), "DPAD"):
+                if lowest is None or len(dpad2_variant) < lowest:
+                    lowest = len(dpad2_variant)
+    assert lowest is not None
+    return lowest
 
 
 def complexity(code: str) -> int:
