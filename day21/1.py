@@ -1,5 +1,7 @@
-from collections.abc import Iterable
+from collections.abc import Generator, Iterable
 from functools import cache
+from itertools import chain, permutations, product
+from typing import Literal
 from util import readlines, vec2
 
 codes = readlines()
@@ -46,41 +48,63 @@ dir2sym = {
 }
 
 
-def move_towards_safe(src: str, dst: str, keymap: dict[str, vec2]) -> list[vec2]:
+@cache
+def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]) -> list[vec2]:
     # never move onto a gap!
     if src == dst:
         return []
-    next = min(
-        filter(lambda k: k != "X" and k != src and keymap[k] in keymap[src].cardinal_neighbors(), keymap),
-        key=lambda k: keymap[k].manhattan(keymap[src]) + keymap[k].manhattan(keymap[dst]),
-    )
-    return [keymap[next] - keymap[src], *move_towards_safe(next, dst, keymap)]
+    keymap = NUMPAD if keymap_name == "NUMPAD" else DPAD
+    src_pos = keymap[src]
+    dst_pos = keymap[dst]
+    neighbors = src_pos.cardinal_neighbors()
+
+    def score(k: str) -> int:
+        return keymap[k].manhattan(src_pos) + keymap[k].manhattan(dst_pos)
+
+    def valid(k: str) -> bool:
+        return k != "X" and k != src and keymap[k] in neighbors
+
+    next = min(filter(valid, keymap), key=score)
+    return [keymap[next] - keymap[src], *move_towards_safe(next, dst, keymap_name)]
 
 
-def move_sequence(keyseq: Iterable[str], keymap: dict[str, vec2]) -> list[str]:
+@cache
+def move_sequence(keyseq: Iterable[str], keymap_name: Literal["NUMPAD", "DPAD"]) -> list[str]:
     moveseq = []
     curr = "A"
     for key in keyseq:
-        moveseq.extend(dir2sym[v] for v in move_towards_safe(curr, key, keymap))
+        moveseq.extend(dir2sym[v] for v in move_towards_safe(curr, key, keymap_name))
         moveseq.append("A")
         curr = key
     return moveseq
 
 
-print(("".join((move_sequence(move_sequence(codes[0], NUMPAD), DPAD)))))
+def gen_variants(moveseq: Iterable[str]) -> Generator[str]:
+    moveseq = "".join(moveseq)
+    for variant in product(*(permutations(part) for part in moveseq.split("A"))):
+        yield "A".join("".join(part) for part in variant)
 
-print(("".join(move_sequence(move_sequence(move_sequence(codes[0], NUMPAD), DPAD), DPAD))))
-print(("".join(move_sequence("v<<A>>^A<A>AvA<^AA>A<vAAA>^A", DPAD))))
+
+def is_safe(moveseq: Iterable[str]) -> bool:
+    return True
 
 
-def your_moves(code: str) -> list[str]:
-    return move_sequence(move_sequence(move_sequence(code, NUMPAD), DPAD), DPAD)
+def your_moves(code: str) -> int:
+    return len(
+        min(
+            map(
+                lambda variant: move_sequence(variant, "DPAD"),
+                chain(*(gen_variants(move_sequence(v, "DPAD")) for v in gen_variants(move_sequence(code, "NUMPAD")))),
+            ),
+            key=len,
+        )
+    )
 
 
 def complexity(code: str) -> int:
     numeric = int("".join(x for x in code if x in "0123456789"))
-    moveseq = len(your_moves(code))
-    print(f"{numeric} * {moveseq}")
+    moveseq = your_moves(code)
+    print(f"{moveseq} * {numeric}")
     return numeric * moveseq
 
 
