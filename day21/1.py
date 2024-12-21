@@ -49,7 +49,9 @@ dir2sym = {
 
 
 @cache
-def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]) -> list[list[vec2]]:
+def move_towards_safe(
+    src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"], prev_dirn: vec2 | None = None
+) -> list[list[vec2]]:
     # never move onto a gap!
     keymap = NUMPAD if keymap_name == "NUMPAD" else DPAD
     src_pos = keymap[src]
@@ -59,7 +61,9 @@ def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]
         return [[]]
 
     def score(k: str) -> int:
-        return keymap[k].manhattan(src_pos) + keymap[k].manhattan(dst_pos)
+        # if the previous direction is the same as the direction to go to for this key
+        # that means a huge saving in keypresses later down the line
+        return keymap[k].manhattan(src_pos) + keymap[k].manhattan(dst_pos) - (prev_dirn == keymap[k] - src_pos)
 
     def valid(k: str) -> bool:
         return k != "X" and k != src and keymap[k] in neighbors
@@ -67,7 +71,9 @@ def move_towards_safe(src: str, dst: str, keymap_name: Literal["NUMPAD", "DPAD"]
     lowest_score = min(map(score, filter(valid, keymap)))
     lowest_nexts = [k for k in keymap if valid(k) and score(k) == lowest_score]
     valid_moves = [
-        [keymap[eq] - src_pos, *further] for eq in lowest_nexts for further in move_towards_safe(eq, dst, keymap_name)
+        [keymap[eq] - src_pos, *further]
+        for eq in lowest_nexts
+        for further in move_towards_safe(eq, dst, keymap_name, prev_dirn=keymap[eq] - src_pos)
     ]
     return valid_moves
 
