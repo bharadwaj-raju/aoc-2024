@@ -3,11 +3,7 @@ from functools import cache
 from itertools import chain, pairwise, product
 from typing import Literal
 
-from util import readlines, vec2
-
-codes = readlines()
-
-print(codes)
+from util import vec2
 
 NUMPAD = {
     "A": vec2(0, 0),
@@ -34,13 +30,6 @@ DPAD = {
 }
 
 
-sym2dir = {
-    "^": vec2(+0, -1),
-    ">": vec2(+1, +0),
-    "v": vec2(+0, +1),
-    "<": vec2(-1, +0),
-}
-
 dir2sym = {
     vec2(+0, -1): "^",
     vec2(+1, +0): ">",
@@ -62,23 +51,30 @@ dir2sym = {
 # Once we have that, finding the most efficient next level move sequence for a given
 # move sequence is just a matter of mapping each key on this level to the calculated
 # most-efficient move.
-#
-# Alternatively an on-line approach? I think that's harder to reason about and
-# implement efficiently. Too much recursion to get lost in.
 
-basic_best_moves: dict[str, str] = {
-    "^": "<",
-    ">": "v",
-    "v": "<v",
-    "<": "v<<",
+best_moves: dict[tuple[str, str], str] = {
+    ("A", "^"): "<",
+    ("A", ">"): "v",
+    ("A", "v"): "<v",
+    ("A", "<"): "v<<",
+    ("^", "A"): ">",
+    (">", "A"): "^",
+    ("v", "A"): "^>",
+    ("<", "A"): ">>^",
+    ("v", ">"): ">",
+    ("v", "<"): "<",
+    ("v", "^"): "^",
+    ("<", "v"): ">",
+    ("<", ">"): ">>",
+    ("<", "^"): ">^",
+    ("^", "<"): "v<",
+    ("^", "v"): "v",
+    ("^", ">"): "v>",
+    (">", "<"): "<<",
+    (">", "v"): "<",
+    (">", "^"): "<^",
 }
 
-return_to_A: dict[str, str] = {
-    "^": ">",
-    ">": "^",
-    "v": "^>",
-    "<": ">>^",
-}
 
 # We are definitely on a good track here.
 # We just need to extend basic_best_moves (which only gives you best moves from A)
@@ -95,18 +91,45 @@ def construct_best_move(seq: str) -> str:
     for i, c in enumerate(seq):
         p = seq[i - 1] if i != 0 else "A"
         if c == p:
-            out.append("A")  # just accept again to enter same char
-        elif c == "A":
-            out.append(return_to_A[p] + "A")
+            out.append("A")  # just hit Accept again to enter the same char
         else:
-            out.append(basic_best_moves[c] + "A")
-    print(out)
+            out.append(best_moves[p, c] + "A")
+    # print(out)
     return "".join(out)
 
 
 def split_by_A(keyseq: str) -> list[str]:
+    split = []
+    accum = []
+    for c in keyseq:
+        if c == "A":
+            split.append("".join(accum) + "A")
+            accum.clear()
+        else:
+            accum.append(c)
+    if accum:
+        split.append("".join(accum))
+    return split
     # return [s + a for s, a in batched(("".join(it) for _, it in groupby(keyseq, key=lambda c: c != "A")), 2)]
-    return [s + "A" for s in keyseq.split("A")]
+    # return [s + "A" for s in keyseq.split("A")]
+
+
+# So, just constructing the move sequence up to 25 layers is still very slow, and takes too much memory.
+# Instead, remember that we just need the length of the sequence. We can take advantage of the fact that
+# splitting across A creates independent subproblems, and we can just find, with memoization, the length after N
+# steps of these subproblems. The cache avoids a lot of repeated work, and this performs very well.
+
+
+@cache
+def best_move_len(seq: str, n: int) -> int:
+    if n == 0:
+        return len(seq)
+    if seq.count("A") > 1:
+        return sum(best_move_len(subseq, n) for subseq in split_by_A(seq))
+    seq = construct_best_move(seq)
+    if n == 1:
+        return len(seq)
+    return best_move_len(seq, n - 1)
 
 
 def move_towards_safe(
@@ -167,5 +190,16 @@ def move_sequence(
         curr = key
     variants = ["".join(s) for s in [list(chain(*x)) for x in product(*moveseqs)]]
     lowest_score = min(map(sequence_score, variants))
-    # return variants
     return [x for x in variants if sequence_score(x) == lowest_score]
+
+
+def extract_numeric_part(code: str) -> int:
+    return int("".join(x for x in code if x.isdigit()).lstrip("0"))
+
+
+def complexity(code: str, layers: int) -> int:
+    move_length = min(
+        best_move_len(seq, layers) for seq in move_sequence(code, "NUMPAD")
+    )
+    numeric = extract_numeric_part(code)
+    return move_length * numeric
